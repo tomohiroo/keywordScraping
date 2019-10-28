@@ -2,15 +2,27 @@ const client = require("cheerio-httpcli");
 const fs = require("fs");
 const jqueryCsv = require("jquery-csv");
 
-const industries = [
+const positiveKeywords = [
   "設計",
   "製造",
   "製作",
-  "機械",
-  "装置"
+  "装置",
+  "機",
+  "FA",
+  "半導体製造",
+  "半導体関連"
 ];
+const negativeKeywords = [
+  "部品製造",
+  "部品加工",
+  "商社",
+  "卸",
+  "加工設備",
+  "設備一覧"
+];
+const keywords = [...positiveKeywords, ...negativeKeywords];
 
-const columnTopHit = ["id", "検索キーワード", "1位URL", ...industries];
+const columnTopHit = ["iid", "検索キーワード", "1位URL", ...keywords];
 
 function sleep(time) {
   return new Promise((resolve, reject) => {
@@ -18,7 +30,7 @@ function sleep(time) {
       resolve();
     }, time);
   });
-}
+};
 
 const keywordFolder = "./keyword/";
 let keywordArray = [];
@@ -33,7 +45,7 @@ const main = (maxcount, kwIndex, i) => {
   // iはkeywordディレクトリのインデックス
   let queryArray = makeQueryArray(keywordArray[kwIndex]);
   let kw2 = keywordArray[kwIndex];
-  sleep(Math.random() * 10000).then(() => {
+  sleep(Math.random() * 100).then(() => {
     return scraping(queryArray.length, kwIndex, i, kw2)
   }).then(() => {
       if (kwIndex + 1 < keywordArray.length) {
@@ -93,9 +105,9 @@ const scraping = (maxcount, kwIndex, i, kw2) => {
           const firstPage = client.fetchSync(href);
           let body = firstPage.body;
           if(body){
-            const hasIndustries = industries.map(i => counter(body, i));
-            const dataHtml = [idArray[i], queryArray[i], href, ...hasIndustries];
-            writeCsv(dataHtml, kw2, columnTopHit);
+            const hasKeywords = keywords.map(i => counter(body, i));
+            const scrapingResults = [idArray[i], queryArray[i], href, ...hasKeywords];
+            writeCsv(scrapingResults, kw2, columnTopHit);
           }
         }
       })(result);
