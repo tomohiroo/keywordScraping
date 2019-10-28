@@ -2,16 +2,30 @@ const client = require("cheerio-httpcli");
 const fs = require("fs");
 const jqueryCsv = require("jquery-csv");
 
-const positiveKeywords = [
+const primaryPositiveKeywords = [
+  "装置",
   "設計",
+  "半導体製造",
+  "半導体関連",
+  "包装機",
+  "印刷機",
+  "製本機",
+  "プラスチック加工機",
+  "食品機",
+  "測量機",
+  "理化学機械器具",
+  "工作機",
+  "加工機",
+  "冷凍機",
+  "化学装置",
+  "繊維機"
+];
+const subPositiveKeywords = [
   "製造",
   "製作",
-  "装置",
   "機",
-  "FA",
-  "半導体製造",
-  "半導体関連"
-];
+  "FA"
+]
 const negativeKeywords = [
   "部品製造",
   "部品加工",
@@ -20,9 +34,9 @@ const negativeKeywords = [
   "加工設備",
   "設備一覧"
 ];
-const keywords = [...positiveKeywords, ...negativeKeywords];
+const keywords = [...primaryPositiveKeywords, ...subPositiveKeywords, ...negativeKeywords];
 
-const columnTopHit = ["iid", "検索キーワード", "1位URL", ...keywords];
+const columnTopHit = ["iid", "検索キーワード", "1位URL", ...keywords, "精査対象"];
 
 function sleep(time) {
   return new Promise((resolve, reject) => {
@@ -105,8 +119,13 @@ const scraping = (maxcount, kwIndex, i, kw2) => {
           const firstPage = client.fetchSync(href);
           let body = firstPage.body;
           if(body){
-            const hasKeywords = keywords.map(i => counter(body, i));
-            const scrapingResults = [idArray[i], queryArray[i], href, ...hasKeywords];
+            const primaryPositiveKeywordCount = primaryPositiveKeywords.map(kw => counter(body, kw));
+            const subPositiveKeywordCount = subPositiveKeywords.map(kw => counter(body, kw));
+            const negativeKeywordCount = negativeKeywords.map(kw => counter(body, kw));
+            const isTarget = primaryPositiveKeywordCount.reduce((a, b) => a + b) > 0 ? 1 :
+                             negativeKeywordCount.reduce((a, b) => a + b) > 0 ? 0 :
+                             subPositiveKeywordCount.reduce((a, b) => a + b) > 0 ? 1 : 0;
+            const scrapingResults = [idArray[i], queryArray[i], href, ...primaryPositiveKeywordCount, ...subPositiveKeywordCount, ...negativeKeywordCount, isTarget];
             writeCsv(scrapingResults, kw2, columnTopHit);
           }
         }
