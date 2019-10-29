@@ -2,41 +2,44 @@ const client = require("cheerio-httpcli");
 const fs = require("fs");
 const jqueryCsv = require("jquery-csv");
 
-const primaryPositiveKeywords = [
-  "装置",
-  "設計",
-  "半導体製造",
-  "半導体関連",
-  "包装機",
-  "印刷機",
-  "製本機",
-  "プラスチック加工機",
-  "食品機",
-  "測量機",
-  "理化学機械器具",
-  "工作機",
-  "加工機",
-  "冷凍機",
-  "化学装置",
-  "繊維機"
-];
-const subPositiveKeywords = [
+const primaryPositiveKeywords = ["装置", "設計"];
+const secodoryPositiveKeywords = [
   "製造",
   "製作",
   "機",
-  "FA"
-]
+  "メーカー",
+  "計",
+  "システム"
+];
 const negativeKeywords = [
   "部品製造",
-  "部品加工",
+  "部品の製造",
+  "部品の加工",
+  "部品の販売",
+  "パーツ製造",
+  "パーツ加工",
+  "パーツの製造",
+  "パーツの加工",
+  "パーツの販売",
+  "自動車部品",
   "商社",
   "卸",
-  "加工設備",
-  "設備一覧"
+  "貿易",
+  "切削"
 ];
-const keywords = [...primaryPositiveKeywords, ...subPositiveKeywords, ...negativeKeywords];
+const keywords = [
+  ...primaryPositiveKeywords,
+  ...secodoryPositiveKeywords,
+  ...negativeKeywords
+];
 
-const columnTopHit = ["iid", "検索キーワード", "1位URL", ...keywords, "精査対象"];
+const columnTopHit = [
+  "iid",
+  "検索キーワード",
+  "1位URL",
+  ...keywords,
+  "精査対象"
+];
 
 function sleep(time) {
   return new Promise((resolve, reject) => {
@@ -44,7 +47,7 @@ function sleep(time) {
       resolve();
     }, time);
   });
-};
+}
 
 const keywordFolder = "./keyword/";
 let keywordArray = [];
@@ -59,15 +62,17 @@ const main = (maxcount, kwIndex, i) => {
   // iはkeywordディレクトリのインデックス
   let queryArray = makeQueryArray(keywordArray[kwIndex]);
   let kw2 = keywordArray[kwIndex];
-  sleep(Math.random() * 100).then(() => {
-    return scraping(queryArray.length, kwIndex, i, kw2)
-  }).then(() => {
+  sleep(Math.random() * 100)
+    .then(() => {
+      return scraping(queryArray.length, kwIndex, i, kw2);
+    })
+    .then(() => {
       if (kwIndex + 1 < keywordArray.length) {
         main(keywordArray.length, kwIndex + 1, 0);
       } else {
         console.log("全てのスクレイピングが終了しました。");
       }
-    })
+    });
 };
 
 const makeQueryArray = kw2 => {
@@ -91,12 +96,12 @@ const makeIdArray = kw2 => {
 
   let kwArray = jqueryCsv.toArrays(kwCsv);
   for (i = 0, d = kwArray.length; i < d; i++) {
-    idArray.push(kwArray[i][0])
+    idArray.push(kwArray[i][0]);
   }
   return idArray;
 };
 
-const counter = (str,seq) => {
+const counter = (str, seq) => {
   return str.split(seq).length - 1;
 };
 
@@ -118,14 +123,30 @@ const scraping = (maxcount, kwIndex, i, kw2) => {
           console.log(href);
           const firstPage = client.fetchSync(href);
           let body = firstPage.body;
-          if(body){
-            const primaryPositiveKeywordCount = primaryPositiveKeywords.map(kw => counter(body, kw));
-            const subPositiveKeywordCount = subPositiveKeywords.map(kw => counter(body, kw));
-            const negativeKeywordCount = negativeKeywords.map(kw => counter(body, kw));
-            const isTarget = primaryPositiveKeywordCount.reduce((a, b) => a + b) > 0 ? 1 :
-                             negativeKeywordCount.reduce((a, b) => a + b) > 0 ? 0 :
-                             subPositiveKeywordCount.reduce((a, b) => a + b) > 0 ? 1 : 0;
-            const scrapingResults = [idArray[i], queryArray[i], href, ...primaryPositiveKeywordCount, ...subPositiveKeywordCount, ...negativeKeywordCount, isTarget];
+          if (body) {
+            const primaryPositiveKeywordCount = primaryPositiveKeywords.map(
+              kw => counter(body, kw)
+            );
+            const secodoryPositiveKeywordCount = secodoryPositiveKeywords.map(
+              kw => counter(body, kw)
+            );
+            const negativeKeywordCount = negativeKeywords.map(kw =>
+              counter(body, kw)
+            );
+            const score = [
+              ...primaryPositiveKeywordCount.map(v => v * 10),
+              ...secodoryPositiveKeywordCount,
+              ...negativeKeywordCount.map(v => v * -5)
+            ].reduce((a, b) => a + b);
+            const scrapingResults = [
+              idArray[i],
+              queryArray[i],
+              href,
+              ...primaryPositiveKeywordCount,
+              ...secodoryPositiveKeywordCount,
+              ...negativeKeywordCount,
+              score
+            ];
             writeCsv(scrapingResults, kw2, columnTopHit);
           }
         }
