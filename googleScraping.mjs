@@ -13,6 +13,7 @@ const secodoryPositiveKeywords = [
 ];
 const negativeKeywords = [
   "部品製造",
+  "部品製造",
   "部品の製造",
   "部品の加工",
   "部品の販売",
