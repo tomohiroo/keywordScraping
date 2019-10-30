@@ -116,39 +116,43 @@ const scraping = (maxcount, kwIndex, i, kw2) => {
       });
       (result => {
         if (result.$ === undefined) {
-          console.log("undefined is detected");
+          console.log(`resultが${result}です。\nqueryArray: ${queryArray[i]}`);
         } else {
           const element = result.$("div[class = 'r']")[0];
           let targetTag = result.$(element).find("a");
           let href = targetTag.attr("href");
-          console.log(href);
-          const firstPage = client.fetchSync(href);
-          let body = firstPage.body;
-          if (body) {
-            const primaryPositiveKeywordCount = primaryPositiveKeywords.map(
-              kw => counter(body, kw)
-            );
-            const secodoryPositiveKeywordCount = secodoryPositiveKeywords.map(
-              kw => counter(body, kw)
-            );
-            const negativeKeywordCount = negativeKeywords.map(kw =>
-              counter(body, kw)
-            );
-            const score = [
-              ...primaryPositiveKeywordCount.map(v => v * 10),
-              ...secodoryPositiveKeywordCount,
-              ...negativeKeywordCount.map(v => v * -5)
-            ].reduce((a, b) => a + b);
-            const scrapingResults = [
-              idArray[i],
-              queryArray[i],
-              href,
-              ...primaryPositiveKeywordCount,
-              ...secodoryPositiveKeywordCount,
-              ...negativeKeywordCount,
-              score
-            ];
-            writeCsv(scrapingResults, kw2, columnTopHit);
+          if (!href) {
+            console.log(`hrefが${href}です。\nqueryArray: ${queryArray[i]}`);
+          } else {
+            console.log(href);
+            const firstPage = client.fetchSync(href);
+            let body = firstPage.body;
+            if (body) {
+              const primaryPositiveKeywordCount = primaryPositiveKeywords.map(
+                kw => counter(body, kw)
+              );
+              const secodoryPositiveKeywordCount = secodoryPositiveKeywords.map(
+                kw => counter(body, kw)
+              );
+              const negativeKeywordCount = negativeKeywords.map(kw =>
+                counter(body, kw)
+              );
+              const score = [
+                ...primaryPositiveKeywordCount.map(v => v * 10),
+                ...secodoryPositiveKeywordCount,
+                ...negativeKeywordCount.map(v => v * -5)
+              ].reduce((a, b) => a + b);
+              const scrapingResults = [
+                idArray[i],
+                queryArray[i],
+                href,
+                ...primaryPositiveKeywordCount,
+                ...secodoryPositiveKeywordCount,
+                ...negativeKeywordCount,
+                score
+              ];
+              writeCsv(scrapingResults, kw2, columnTopHit);
+            }
           }
         }
       })(result);
