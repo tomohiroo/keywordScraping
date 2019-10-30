@@ -34,13 +34,7 @@ const keywords = [
   ...negativeKeywords
 ];
 
-const columnTopHit = [
-  "iid",
-  "検索キーワード",
-  "1位URL",
-  ...keywords,
-  "精査対象"
-];
+const columns = ["iid", "検索キーワード", "1位URL", ...keywords, "精査対象"];
 
 function sleep(time) {
   return new Promise((resolve, reject) => {
@@ -115,45 +109,43 @@ const scraping = (maxcount, kwIndex, i, kw2) => {
         q: queryArray[i]
       });
       (result => {
-        if (result.$ === undefined) {
-          console.log(`resultが${result}です。\nqueryArray: ${queryArray[i]}`);
-        } else {
+        try {
           const element = result.$("div[class = 'r']")[0];
           let targetTag = result.$(element).find("a");
           let href = targetTag.attr("href");
-          if (!href) {
-            console.log(`hrefが${href}です。\nqueryArray: ${queryArray[i]}`);
-          } else {
-            console.log(href);
-            const firstPage = client.fetchSync(href);
-            let body = firstPage.body;
-            if (body) {
-              const primaryPositiveKeywordCount = primaryPositiveKeywords.map(
-                kw => counter(body, kw)
-              );
-              const secodoryPositiveKeywordCount = secodoryPositiveKeywords.map(
-                kw => counter(body, kw)
-              );
-              const negativeKeywordCount = negativeKeywords.map(kw =>
-                counter(body, kw)
-              );
-              const score = [
-                ...primaryPositiveKeywordCount.map(v => v * 10),
-                ...secodoryPositiveKeywordCount,
-                ...negativeKeywordCount.map(v => v * -5)
-              ].reduce((a, b) => a + b);
-              const scrapingResults = [
-                idArray[i],
-                queryArray[i],
-                href,
-                ...primaryPositiveKeywordCount,
-                ...secodoryPositiveKeywordCount,
-                ...negativeKeywordCount,
-                score
-              ];
-              writeCsv(scrapingResults, kw2, columnTopHit);
-            }
+          console.log(href);
+          const firstPage = client.fetchSync(href);
+          let body = firstPage.body;
+          if (body) {
+            const primaryPositiveKeywordCount = primaryPositiveKeywords.map(
+              kw => counter(body, kw)
+            );
+            const secodoryPositiveKeywordCount = secodoryPositiveKeywords.map(
+              kw => counter(body, kw)
+            );
+            const negativeKeywordCount = negativeKeywords.map(kw =>
+              counter(body, kw)
+            );
+            const score = [
+              ...primaryPositiveKeywordCount.map(v => v * 10),
+              ...secodoryPositiveKeywordCount,
+              ...negativeKeywordCount.map(v => v * -5)
+            ].reduce((a, b) => a + b);
+            const scrapingResults = [
+              idArray[i],
+              queryArray[i],
+              href,
+              ...primaryPositiveKeywordCount,
+              ...secodoryPositiveKeywordCount,
+              ...negativeKeywordCount,
+              score
+            ];
+            writeCsv(scrapingResults, kw2, columns);
           }
+        } catch (e) {
+          console.log(e.message);
+          console.log(`id:${idArray[i]},\nquery:${queryArray[i]}`);
+          writeCsv([idArray[i], queryArray[i]], kw2, columns);
         }
       })(result);
       console.log(`${i} / ${queryArray.length}`);
