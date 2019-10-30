@@ -57,7 +57,7 @@ const main = (maxcount, kwIndex, i) => {
   // iはkeywordディレクトリのインデックス
   let urlArray = makeUrlArray(keywordArray[kwIndex]);
   let kw2 = keywordArray[kwIndex];
-  sleep(Math.random() * 100)
+  sleep(0)
     .then(() => {
       return scraping(urlArray.length, kwIndex, i, kw2);
     })
