@@ -143,7 +143,7 @@ const scraping = (maxcount, kwIndex, i, kw2) => {
             writeCsv(scrapingResults, kw2, columns);
           }
         } catch (e) {
-          console.log(e.message);
+          console.log(`ERROR: ${e.message}`);
           console.log(`id:${idArray[i]},\nquery:${queryArray[i]}`);
           writeCsv([idArray[i], queryArray[i]], kw2, columns);
         }
@@ -179,9 +179,26 @@ const writeCsv = (data, kw2, column) => {
     });
   }
   if (checkFile(`./${dirname}/${kw2}.csv`)) {
-    fs.appendFileSync(`./${dirname}/${kw2}.csv`, [data + "\n"], err => {
-      if (err) throw err;
-    });
+    fs.appendFileSync(
+      `./${dirname}/${kw2}.csv`,
+      [
+        data.map(v => {
+          if (typeof v == "number") {
+            return v;
+          } else {
+            const data = v
+              .split("\n")
+              .join(",")
+              .split("\r")
+              .join(",");
+            return data.match(",") ? `"${data}"` : data;
+          }
+        }) + "\n"
+      ],
+      err => {
+        if (err) throw err;
+      }
+    );
   } else {
     fs.writeFileSync(`./${dirname}/${kw2}.csv`);
     // excelで開く際の文字化け防止でBom付きutf8に変換
