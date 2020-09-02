@@ -9,7 +9,7 @@
     "csv": "^5.1.2",
     "encoding-japanese": "^1.0.29",
     "fs": "^0.0.1-security",
-    "googleapis": "^37.2.0",
+    "googleapis": "^39.1.0",
     "jquery-csv": "^0.8.9",
     "lodash": "^4.17.11",
     "puppeteer": "^1.12.2",
